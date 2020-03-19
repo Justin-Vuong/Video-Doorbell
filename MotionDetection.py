@@ -80,7 +80,7 @@ while True:
     if len(cnts) > 0:
         if loopback == -1:
             videoIdentifier += 1
-            vidClip = cv2.VideoWriter('Footage' + str(videoIdentifier) + '.avi', fourcc, 20.0, (640, 480))  
+            vidClip = cv2.VideoWriter('SavedClips/Footage' + str(videoIdentifier) + '.avi', fourcc, 20.0, (640, 480))  
         isRecording = True
         loopback = ((bufferLength*fps)+(int(saveImg.num)-1)) % (bufferLength*fps)
          
@@ -119,11 +119,6 @@ while True:
         
     saveImg.clip = frame
     saveImg = saveImg.next
-    
-    
-    
-    
-    
     
     if key == ord("q"):
         break
