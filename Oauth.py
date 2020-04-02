@@ -6,6 +6,8 @@ import json
 import requests
 import gdata.youtube
 import gdata.youtube.service
+import os
+
 def getAuth():
     HOST = ''   # Symbolic name, meaning all available interfaces
     PORT = 55555 # Arbitrary non-privileged port
@@ -36,6 +38,7 @@ def getAuth():
 
     conn.close()
     s.close()
+    #os.system("pkill -3 chromium")
     
     refreshReq = r.text.split(",")
     authToken = refreshReq[0][21:len(refreshReq[0])-1]

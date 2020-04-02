@@ -5,6 +5,8 @@ import datetime
 import imutils
 from imutils.video import VideoStream
 import UploadVid
+import threading
+from UploadVid import QueueNode
 
 class FrameBuffer:
     def __init__(self):
@@ -34,7 +36,7 @@ class VidBuffer:
             currentLoop = nextLoop
         currentLoop.next = self.head
 
-def startCamera(yt):        
+def startCamera(queue):        
     RefFrameCount = 0
 
     vs = VideoStream(src=0).start()
@@ -52,7 +54,6 @@ def startCamera(yt):
     time.sleep(2)
 
     while True:
-        print("hi")
         frame = vs.read()
         text = "Nobody"
         if frame is None:
@@ -111,7 +112,9 @@ def startCamera(yt):
                     settings["file"] = "/home/pi/Desktop/Video-Doorbell/SavedClips/" + name_time + ".avi"
                     settings["title"] = name_time
                     settings["description"] = "Video Capture from " + name_time
-                    UploadVid.youtube_login(yt, settings)
+                    UploadVid.youtube_upload(queue.youtube_login, settings)
+                    video = QueueNode(settings)
+                    queue.addNewVid(video)
             
             #Just detected motion, continue to record
                 
@@ -136,4 +139,3 @@ def startCamera(yt):
 
     vs.stop()
     cv2.destroyAllWindows()
-

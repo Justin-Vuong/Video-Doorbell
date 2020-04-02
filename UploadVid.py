@@ -4,6 +4,7 @@ import httplib2
 import os
 import random
 import time
+import threading
 
 import google.oauth2.credentials
 import google_auth_oauthlib.flow
@@ -13,10 +14,53 @@ from googleapiclient.http import MediaFileUpload
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2.credentials import Credentials
 
-def youtube_login(yt_auth, settings):
+class UploadQueue:
+    def __init__(self, yt):
+        self.nextVid = None
+        self.lastVid = None
+        self.isUploading = False
+        self.youtube_login = yt    
+            
+    def addNewVid(self, vidNode):
+        print("Added " + vidNode.vidSettings["title"] + ' ->' + str(self.isUploading))
+        if self.nextVid == None:
+            self.nextVid = vidNode
+            self.lastVid = vidNode
+            print("Empty Queue")
+        else:
+            self.lastVid.next = vidNode
+            self.lastVid = vidNode
+            print("adding to queue")
+        
+        if self.isUploading == False:
+            print("Starting new thread")
+            self.isUploading = True
+            vidUploader = CustomThread(self)
+            vidUploader.start()
+
+class QueueNode:
+    def __init__(self, videoSettings):
+        self.vidSettings = videoSettings
+        self.next = None
+
+class CustomThread(threading.Thread):
+    def __init__(self, queue): 
+        threading.Thread.__init__(self) 
+        self.queue = queue
+    def run(self):
+        while self.queue.nextVid:
+            currentUpload = self.queue.nextVid
+            self.queue.nextVid = currentUpload.next
+            print("Starting upload to " + currentUpload.vidSettings["title"] + "...")
+            youtube_upload(self.queue.youtube_login, currentUpload.vidSettings)
+            print("Done upload to " + currentUpload.vidSettings["title"])
+        self.queue.isUploading = False
+        print("Closing thread")
+        
+def youtube_upload(yt_auth, settings):
     try:
-        initialize_upload(yt_auth, settings)
-    except HttpError:
+        initialize_video(yt_auth, settings)
+    except HttpError as e:
         print ('An HTTP error %d occurred:\n%s' % (e.resp.status, e.content))
 
 # Authorize the request and store authorization credentials.
@@ -25,7 +69,7 @@ def get_authenticated_service(in_token, in_refresh_token, in_client_id, in_clien
     credentials = Credentials(token = in_token, refresh_token=in_refresh_token, id_token=None, token_uri="http://localhost:55555", client_id=in_client_id, client_secret=in_client_secret, scopes="https://www.googleapis.com/auth/youtube.upload")
     return build("youtube", "v3", credentials = credentials)
 
-def initialize_upload(youtube, settings):
+def initialize_video(youtube, settings):
   tags = None
   
   body=dict(
@@ -42,17 +86,6 @@ def initialize_upload(youtube, settings):
   insert_request = youtube.videos().insert(
     part=','.join(body.keys()),
     body=body,
-    # The chunksize parameter specifies the size of each chunk of data, in
-    # bytes, that will be uploaded at a time. Set a higher value for
-    # reliable connections as fewer chunks lead to faster uploads. Set a lower
-    # value for better recovery on less reliable connections.
-    #
-    # Setting 'chunksize' equal to -1 in the code below means that the entire
-    # file will be uploaded in a single HTTP request. (If the upload fails,
-    # it will still be retried where it left off.) This is usually a best
-    # practice, but if you're using Python older than 2.6 or if you're
-    # running on App Engine, you should set the chunksize to something like
-    # 1024 * 1024 (1 megabyte).
     media_body=MediaFileUpload(settings["file"], chunksize=-1, resumable=True)
   )
 
@@ -93,12 +126,12 @@ def resumable_upload(request):
               print ('Video id "%s" was successfully uploaded.' % response['id'])
             else:
               exit('The upload failed with an unexpected response: %s' % response)
-    except HttpError:
+    except HttpError as e:
         if e.resp.status in RETRIABLE_STATUS_CODES:
             error = 'A retriable HTTP error %d occurred:\n%s' % (e.resp.status, e.content)
         else:
             raise
-    except RETRIABLE_EXCEPTIONS:
+    except RETRIABLE_EXCEPTIONS as e:
         error = 'A retriable error occurred: %s' % e
 
     if error is not None:
