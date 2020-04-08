@@ -7,11 +7,9 @@ import time
 import threading
 
 import google.oauth2.credentials
-import google_auth_oauthlib.flow
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaFileUpload
-from google_auth_oauthlib.flow import InstalledAppFlow
 from google.oauth2.credentials import Credentials
 
 class UploadQueue:
@@ -64,8 +62,7 @@ def youtube_upload(yt_auth, settings):
         print ('An HTTP error %d occurred:\n%s' % (e.resp.status, e.content))
 
 # Authorize the request and store authorization credentials.
-def get_authenticated_service(in_token, in_refresh_token, in_client_id, in_client_secret):
-    flow = InstalledAppFlow.from_client_secrets_file('/home/pi/Desktop/Video-Doorbell/client_secret_doorbell.json', "https://www.googleapis.com/auth/youtube.upload")
+def get_authenticated_yt_service(in_token, in_refresh_token, in_client_id, in_client_secret):
     credentials = Credentials(token = in_token, refresh_token=in_refresh_token, id_token=None, token_uri="http://localhost:55555", client_id=in_client_id, client_secret=in_client_secret, scopes="https://www.googleapis.com/auth/youtube.upload")
     return build("youtube", "v3", credentials = credentials)
 
