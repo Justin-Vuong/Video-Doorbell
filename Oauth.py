@@ -8,13 +8,14 @@ import gdata.youtube
 import gdata.youtube.service
 import os
 
-def getAuth():
+def getAuth(service_scope):
     HOST = ''   # Symbolic name, meaning all available interfaces
     PORT = 55555 # Arbitrary non-privileged port
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     #Bind socket to local host and port
     try:
         s.bind((HOST, PORT))
+        print("Opened Port")
     except socket.error as msg:
         print('Bind failed. Error Code : ' + str(msg[0]) + ' Message ' + msg[1])
         sys.exit()
@@ -22,7 +23,7 @@ def getAuth():
     s.listen(1)
     
     #Open link in browser
-    webbrowser.open_new("https://accounts.google.com/o/oauth2/auth?client_id=223289540342-j8o4l4p6meo9pbnq1ju3dq8jv6o278qa.apps.googleusercontent.com&redirect_uri=http://localhost:55555&response_type=code&scope=https://www.googleapis.com/auth/youtube.upload")
+    webbrowser.open_new("https://accounts.google.com/o/oauth2/auth?client_id=223289540342-j8o4l4p6meo9pbnq1ju3dq8jv6o278qa.apps.googleusercontent.com&redirect_uri=http://localhost:55555&response_type=code&scope="+str(service_scope))
 
     conn, addr = s.accept()
     print ('Connected with ' + addr[0] + ':' + str(addr[1]))
