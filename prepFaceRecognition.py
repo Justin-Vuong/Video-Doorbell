@@ -9,7 +9,6 @@ from googleapiclient.discovery import build
 
 def getGPhotoAuth(): 
     gPhoto = Oauth.getAuth("https://www.googleapis.com/auth/photoslibrary.readonly")
-    #gPhoto = {"token":"ya29.a0Ae4lvC3dvhjGuGGYbASUJHFbI5Ie2COKcjj0svV8nrizXXgk0HUmBDD1bBaBVObkIdJiRM4iP5a2khKs0vA0ah2v55k7MuW0KIuYa89MQspjHYxWfr-ncOmI5G94eZFHNoHCsIh_F_nNCEMjzPbmrkfSfcQ13D621Jc", "refresh_token":"1//0d1Yn8FHLA43GCgYIARAAGA0SNwF-L9Iruoh-LD6RobMmNSTFxQHekh0wOyGk03w-4RqKzzvDQzwei4xh3Ra7fxPzZec2rFpC1Nk"}
     apiData = Oauth.parseApiData()
     credentials = Credentials(token=gPhoto["token"],
                               refresh_token=gPhoto["refresh_token"],
@@ -51,7 +50,3 @@ def getAlbumPics(authGPhotos):
 
     print("Done reading: " + str(len(allPhotos)))
     return allPhotos
-    #inData = {"Authorization":"Bearer " + gPhoto["token"], "Accept":"application/json"}
-    #r = requests.get("https://photoslibrary.googleapis.com/v1/albums?pageSize=20&key="+apiData["client_id"], inData)
-    #print(r.text)
-    #GET https://photoslibrary.googleapis.com/v1/albums?pageSize=10&key=[YOUR_API_KEY] HTTP/1.1
