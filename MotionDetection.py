@@ -7,6 +7,9 @@ from imutils.video import VideoStream
 import UploadVid
 import threading
 from UploadVid import QueueNode
+import face_recognition
+import FaceProcessing
+import GenerateEmail
 
 class FrameBuffer:
     def __init__(self):
@@ -38,7 +41,9 @@ class VidBuffer:
 
 def startCamera(queue):        
     RefFrameCount = 0
-
+    detector = cv2.CascadeClassifier("pi-face-recognition/haarcascade_frontalface_default.xml")
+    names = []
+            
     vs = VideoStream(src=0).start()
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
@@ -74,7 +79,6 @@ def startCamera(queue):
         cnts = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         cnts = imutils.grab_contours(cnts)
         
-        
         for c in cnts:
             if cv2.contourArea(c) < 250:
                 continue
@@ -88,7 +92,20 @@ def startCamera(queue):
                 vidClip = cv2.VideoWriter("SavedClips/" + name_time + ".avi", fourcc, 20.0, (640, 480))
             isRecording = True
             loopback = ((bufferLength*fps)+(int(saveImg.num)-1)) % (bufferLength*fps)
-             
+        
+        #Prepare for facial recognition
+        grayFR = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        rgbFR = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        # detect faces in the grayscale frame
+        rects = detector.detectMultiScale(grayFR, scaleFactor=1.1, 
+        minNeighbors=5, minSize=(30, 30),
+        flags=cv2.CASCADE_SCALE_IMAGE)
+        boxesFaces = [(y, x + w, y + h, x) for (x, y, w, h) in rects]
+        encodings = face_recognition.face_encodings(rgbFR, boxesFaces)
+
+        #Run facial recognition
+        FaceProcessing.runFacialRecognition(frame, encodings, boxesFaces, names)
+        
         cv2.putText(frame, "Room Status {}: {}".format(RefFrameCount,text), (10,20), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255),2)
         cv2.putText(frame, datetime.datetime.now().strftime("%A %d %B %Y %I:%M:%S%p"), (10, frame.shape[0]-10), cv2.FONT_HERSHEY_SIMPLEX, 0.35, (0,0,255), 1)
         
@@ -111,10 +128,18 @@ def startCamera(queue):
                     settings = {}
                     settings["file"] = "/home/pi/Desktop/Video-Doorbell/SavedClips/" + name_time + ".avi"
                     settings["title"] = name_time
-                    settings["description"] = "Video Capture from " + name_time
+                    settings["description"] = "Video Capture from " + name_time + "\n"
+
+                    for person in names:
+                        settings["description"] += "Found " + person + " at your door."
+                                               
                     UploadVid.youtube_upload(queue.youtube_login, settings)
                     video = QueueNode(settings)
                     queue.addNewVid(video)
+                    
+                    #Send email
+                    GenerateEmail.sendEmail(names)
+                    names = []
             
             #Just detected motion, continue to record
                 
