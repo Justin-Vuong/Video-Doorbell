@@ -24,7 +24,7 @@ def runFacialRecognition(frame, encodings, boxes, names):
             counts = {}
 
             # loop over the matched indexes and maintain a count for
-            # each recognized face face
+            # each recognized face
             for i in matchedIdxs:
                 name = data["names"][i]
                 counts[name] = counts.get(name, 0) + 1
